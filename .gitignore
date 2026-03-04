@@ -1,0 +1,7 @@
+.venv/
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.arff
+ML CW GPT.ipynb
+ML CW1 GEMINI.ipynb
