@@ -4,12 +4,11 @@ MSc Data Science | Machine Learning Group Submission
 
 ---
 
-## Notebooks
+## Notebook
 
 | Notebook | Description |
 |---|---|
-| `ML_Classification_Complete.ipynb` | Full original notebook with detailed markdown, exploratory analysis, and verbose evaluation output |
-| `MLCW_1_Simplified.ipynb` | Simplified refactor — same models and results, cleaner and more compact code |
+| `MLCW_1_Simplified.ipynb` | Clean, compact ML classification notebook — all 9 models, full evaluation, and comparative analysis |
 
 ---
 
@@ -26,7 +25,7 @@ MSc Data Science | Machine Learning Group Submission
 
 ## Models
 
-All 9 classifiers below are implemented in both notebooks with identical hyperparameter search spaces, cross-validation settings, and random states.
+All 9 classifiers are implemented with hyperparameter search, cross-validation, and full evaluation.
 
 | # | Model | Search | CV | Folds |
 |---|---|---|---|---|
