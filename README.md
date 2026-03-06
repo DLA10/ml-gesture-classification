@@ -8,7 +8,7 @@ MSc Data Science | Machine Learning Group Submission
 
 | Notebook | Description |
 |---|---|
-| `MLCW_1_Simplified.ipynb` | Clean, compact ML classification notebook — all 9 models, full evaluation, and comparative analysis |
+| `MLCW_1_Simplified.ipynb` | Clean, compact ML classification notebook — all 11 models, full evaluation, and comparative analysis |
 
 ---
 
@@ -64,11 +64,10 @@ A feedforward artificial neural network with one or more hidden layers. Trained 
 - **Tuning:** RandomizedSearchCV, 30 iterations, 3-fold CV
 - **Preprocessing:** StandardScaler inside Pipeline
 
-### 7. Linear Discriminant Analysis (LDA)
-A generative linear classifier that projects the feature space onto directions that maximise between-class scatter relative to within-class scatter. Also performs dimensionality reduction (at most `n_classes − 1 = 4` components). The solver–shrinkage interaction is handled via a list of parameter grids.
-- **Key hyperparameters:** `solver` (svd/lsqr/eigen), `shrinkage` (covariance regularisation), `n_components`
+### 7. XGBoost
+A scalable gradient boosting framework using second-order gradient statistics and regularisation terms in the objective function. Builds trees sequentially, each correcting errors of the prior. Supports L1 and L2 regularisation natively and is highly competitive on tabular data.
+- **Key hyperparameters:** `n_estimators`, `learning_rate`, `max_depth`, `subsample`, `colsample_bytree`
 - **Tuning:** GridSearchCV, 5-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
 
 ### 8. Naive Bayes (Gaussian)
 Applies Bayes' theorem under the assumption of conditional feature independence given the class label. Models each feature as a Gaussian distribution per class. Despite its strong independence assumption (violated by correlated skeletal features), it serves as a fast and interpretable baseline.
@@ -81,6 +80,16 @@ A linear classifier that models the log-odds of class membership as a linear com
 - **Key hyperparameters:** `C` (inverse regularisation), `penalty` (l1/l2), `solver` (lbfgs/saga)
 - **Tuning:** GridSearchCV, 24 combinations, 5-fold CV
 - **Preprocessing:** StandardScaler inside Pipeline
+
+### 10. Gradient Boosting
+A sequential ensemble method that fits each new tree to the residuals (negative gradient) of the combined model. Uses the scikit-learn implementation with a stage-wise additive approach. More interpretable than XGBoost but slower to train on large datasets.
+- **Key hyperparameters:** `n_estimators`, `learning_rate`, `max_depth`, `subsample`
+- **Tuning:** GridSearchCV, 5-fold CV
+
+### 11. Decision Tree
+A single recursive tree that partitions the feature space using axis-aligned splits chosen to maximise information gain (Gini impurity). Fast and highly interpretable, but prone to overfitting without depth constraints. Serves as a baseline for the ensemble methods.
+- **Key hyperparameters:** `max_depth`, `min_samples_split`, `min_samples_leaf`
+- **Tuning:** GridSearchCV, 5-fold CV
 
 ---
 
@@ -113,13 +122,13 @@ Shows the count of correct and incorrect predictions for each class pair. Plotte
 One ROC curve per class using a One-vs-Rest (OvR) strategy. The curve plots True Positive Rate vs. False Positive Rate at varying classification thresholds. The area under each curve (AUC) measures how well the model distinguishes that class from all others. A perfect classifier has AUC = 1.0; a random classifier has AUC = 0.5.
 
 ### Final Comparison Bar Charts
-Three side-by-side horizontal bar charts (sorted by Macro ROC AUC) comparing all 9 models across:
+Three side-by-side horizontal bar charts (sorted by Macro ROC AUC) comparing all 11 models across:
 - Balanced Accuracy
 - Macro OvR ROC AUC
 - Micro OvR ROC AUC
 
 ### Per-Class ROC Comparison (all models)
-One plot per class (5 total), with all 9 models overlaid on the same axes. Allows direct comparison of how well each model distinguishes a specific gesture phase from the rest.
+One plot per class (5 total), with all 11 models overlaid on the same axes. Allows direct comparison of how well each model distinguishes a specific gesture phase from the rest.
 
 ---
 
@@ -128,8 +137,8 @@ One plot per class (5 total), with all 9 models overlaid on the same axes. Allow
 - **Train/test split:** 70% training, 30% test — stratified by class, `random_state=42`
 - **Hyperparameter tuning:** Performed on training data only (no leakage into test set)
 - **Scoring metric:** `balanced_accuracy` for all `GridSearchCV` / `RandomizedSearchCV` calls
-- **Preprocessing:** `StandardScaler` applied inside `Pipeline` for scale-sensitive models (SVM, KNN, MLP, LDA, Naive Bayes, Logistic Regression)
-- **Tree-based models** (Random Forest, Extra Trees, LightGBM) require no feature scaling
+- **Preprocessing:** `StandardScaler` applied inside `Pipeline` for scale-sensitive models (SVM, KNN, MLP, Naive Bayes, Logistic Regression)
+- **Tree-based models** (Random Forest, Extra Trees, LightGBM, XGBoost, Gradient Boosting, Decision Tree) require no feature scaling
 
 ---
 
@@ -138,6 +147,7 @@ One plot per class (5 total), with all 9 models overlaid on the same axes. Allow
 ```
 scikit-learn
 lightgbm
+xgboost
 numpy
 pandas
 matplotlib
@@ -147,7 +157,7 @@ seaborn
 Install with:
 
 ```bash
-pip install scikit-learn lightgbm numpy pandas matplotlib seaborn
+pip install scikit-learn lightgbm xgboost numpy pandas matplotlib seaborn
 ```
 
 ---
@@ -158,4 +168,5 @@ pip install scikit-learn lightgbm numpy pandas matplotlib seaborn
 - Pedregosa et al. (2011). *Scikit-learn: Machine Learning in Python.* JMLR 12, 2825–2830.
 - Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS.
 - Breiman, L. (2001). *Random Forests.* Machine Learning, 45(1), 5–32.
-- Fisher, R. A. (1936). *The Use of Multiple Measurements in Taxonomic Problems.* Annals of Eugenics.
+- Chen, T. & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD.
+- Friedman, J. H. (2001). *Greedy Function Approximation: A Gradient Boosting Machine.* Annals of Statistics.
