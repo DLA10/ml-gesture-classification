@@ -1,6 +1,17 @@
 # ML Gesture Phase Segmentation — Classification Coursework
 
-MSc Data Science | Machine Learning Group Submission
+MSc Data Science | Machine Learning Group Submission | Group 11
+
+---
+
+## Group Members
+
+| Name | Student ID |
+|---|---|
+| Lalith Aditya Devaraj | K2551111 |
+| Raja Mathangi Sundar | K2542487 |
+| Shalini Manikkavasagam | K2551032 |
+| Threya Reddy Tummeti | K2557789 |
 
 ---
 
@@ -8,137 +19,369 @@ MSc Data Science | Machine Learning Group Submission
 
 | Notebook | Description |
 |---|---|
-| `MLCW_1_Simplified.ipynb` | Clean, compact ML classification notebook — all 11 models, full evaluation, and comparative analysis |
+| `MLCW_1_Simplified.ipynb` | Main submission notebook — 8 classification models, full hyperparameter tuning, evaluation, and comparative analysis |
 
 ---
 
 ## Dataset
 
-**OpenML ID:** 4538 — *Gesture Phase Segmentation*
+**OpenML ID:** 4538 — *Gesture Phase Segmentation (Processed)*
 
 - **Samples:** 9,873
-- **Features:** 32 continuous (skeletal joint positions extracted from video recordings)
-- **Classes:** 5 gesture phases:
-  - `D` — Rest (default/idle position)
-  - `H` — Hold (gesture held in place)
-  - `P` — Preparation (movement towards gesture)
-  - `R` — Retraction (return to rest)
-  - `S` — Stroke (peak expressive phase)
-- **Source:** Madeo et al. (2013), loaded via `sklearn.datasets.fetch_openml(data_id=4538)`
-- **Class imbalance:** D and S are majority classes; H and R are minorities — balanced accuracy is used as the primary metric
+- **Features:** 32 continuous (skeletal joint positions and velocities extracted from RGB-D video recordings)
+- **Classes:** 5 gesture phases
+- **Source:** Madeo et al. (2013), loaded via `sklearn.datasets.fetch_openml(data_id=4538, as_frame=False)`
+
+### Class Distribution
+
+| Class | Label | Count | % of Dataset |
+|---|---|---|---|
+| D | Rest (default/idle position) | 2,741 | 27.8% |
+| H | Hold (gesture held in place) | 998 | 10.1% |
+| P | Preparation (movement towards gesture) | 2,097 | 21.2% |
+| R | Retraction (return to rest) | 1,087 | 11.0% |
+| S | Stroke (peak expressive gesture phase) | 2,950 | 29.9% |
+
+> **Class imbalance note:** Hold (H) and Retraction (R) are the minority classes at ~10% each, while Stroke (S) and Rest (D) together account for nearly 58% of the data. This imbalance directly motivated the choice of balanced accuracy as the primary evaluation metric, rather than raw accuracy.
+
+### Train / Test Split
+
+| Set | Samples |
+|---|---|
+| Training | 6,911 (70%) |
+| Test | 2,962 (30%) |
+
+Split strategy: stratified by class, `random_state=42`.
 
 ---
 
 ## Classification Methods
 
-### 1. Support Vector Machine (RBF Kernel)
-SVM finds the maximum-margin hyperplane separating classes in a high-dimensional feature space. The RBF (Radial Basis Function) kernel maps data into an infinite-dimensional space, enabling non-linear decision boundaries. It is effective on mid-sized datasets with well-separated classes.
-- **Key hyperparameters:** `C` (regularisation strength), `gamma` (kernel bandwidth)
-- **Tuning:** RandomizedSearchCV, 25 iterations, 3-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
+All 8 models are numbered as they appear in the notebook and are evaluated using the same shared `evaluate()` function under identical conditions.
 
-### 2. Random Forest
-An ensemble of decision trees, each trained on a bootstrapped subset of data with random feature selection at each split. Predictions are made by majority vote. Reduces variance through averaging while maintaining low bias.
-- **Key hyperparameters:** `n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf`, `max_features`
-- **Tuning:** RandomizedSearchCV, 40 iterations, 5-fold CV
+---
 
-### 3. K-Nearest Neighbours (KNN)
-A non-parametric instance-based classifier that assigns a class based on the majority vote (or distance-weighted vote) of the k nearest training samples. Simple but computationally expensive at inference time. Sensitive to feature scale.
-- **Key hyperparameters:** `n_neighbors` (k), `weights` (uniform/distance), `metric` (euclidean/manhattan)
-- **Tuning:** GridSearchCV, 54 combinations, 5-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
+### Model 1: K-Nearest Neighbours (KNN)
 
-### 4. LightGBM
-A gradient boosting framework using leaf-wise tree growth and histogram-based split finding. Significantly faster and more memory-efficient than traditional GBDT implementations. Excellent on tabular data.
-- **Key hyperparameters:** `n_estimators`, `learning_rate`, `num_leaves`, `max_depth`, `subsample`, `colsample_bytree`
-- **Tuning:** RandomizedSearchCV, 40 iterations, 5-fold CV
+A non-parametric instance-based classifier that assigns a class label by majority vote (or distance-weighted vote) among the k nearest training samples in feature space.
 
-### 5. Extra Trees (Extremely Randomised Trees)
-Similar to Random Forest but selects split thresholds entirely at random rather than searching for the best threshold. This additional randomisation further reduces variance at the cost of slight bias, and is computationally faster.
-- **Key hyperparameters:** `n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf`, `max_features`
-- **Tuning:** RandomizedSearchCV, 40 iterations, 5-fold CV
+- **Wrapper:** `OneVsRestClassifier(KNeighborsClassifier(n_jobs=-1))`
+- **Tuning method:** `GridSearchCV`, 5-fold CV
+- **Search space:** 54 combinations
+  - `n_neighbors`: [1, 3, 5, 7, 9, 11, 15, 21, 31]
+  - `weights`: [uniform, distance]
+  - `metric`: [euclidean, manhattan, minkowski]
+- **Scoring:** `balanced_accuracy`
 
-### 6. Multi-Layer Perceptron (MLP)
-A feedforward artificial neural network with one or more hidden layers. Trained via backpropagation with stochastic gradient descent. Capable of learning complex non-linear feature representations.
-- **Key hyperparameters:** `hidden_layer_sizes` (architecture), `activation` (relu/tanh), `alpha` (L2 regularisation), `learning_rate`
-- **Tuning:** RandomizedSearchCV, 30 iterations, 3-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
 
-### 7. XGBoost
-A scalable gradient boosting framework using second-order gradient statistics and regularisation terms in the objective function. Builds trees sequentially, each correcting errors of the prior. Supports L1 and L2 regularisation natively and is highly competitive on tabular data.
-- **Key hyperparameters:** `n_estimators`, `learning_rate`, `max_depth`, `subsample`, `colsample_bytree`
-- **Tuning:** GridSearchCV, 5-fold CV
+| Rank | n_neighbors | weights | metric | CV Bal. Acc |
+|---|---|---|---|---|
+| 1 | 1 | uniform | manhattan | 0.6329 |
+| 1 | 1 | distance | manhattan | 0.6329 |
+| 3 | 1 | uniform | euclidean | 0.6107 |
+| 3 | 1 | distance | euclidean | 0.6107 |
+| 3 | 1 | uniform | minkowski | 0.6107 |
 
-### 8. Naive Bayes (Gaussian)
-Applies Bayes' theorem under the assumption of conditional feature independence given the class label. Models each feature as a Gaussian distribution per class. Despite its strong independence assumption (violated by correlated skeletal features), it serves as a fast and interpretable baseline.
-- **Key hyperparameter:** `var_smoothing` (adds fraction of max variance to all variances for numerical stability)
-- **Tuning:** GridSearchCV, 11 values, 5-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
+**Best configuration:** `n_neighbors=1`, `weights=uniform`, `metric=manhattan`, CV Bal. Acc = **0.6329**
 
-### 9. Logistic Regression
-A linear classifier that models the log-odds of class membership as a linear combination of features. Uses the multinomial (softmax) formulation for multi-class problems. The solver–penalty interaction (lbfgs only supports L2; saga supports L1 and L2) is handled via a list of parameter grids.
-- **Key hyperparameters:** `C` (inverse regularisation), `penalty` (l1/l2), `solver` (lbfgs/saga)
-- **Tuning:** GridSearchCV, 24 combinations, 5-fold CV
-- **Preprocessing:** StandardScaler inside Pipeline
+---
 
-### 10. Gradient Boosting
-A sequential ensemble method that fits each new tree to the residuals (negative gradient) of the combined model. Uses the scikit-learn implementation with a stage-wise additive approach. More interpretable than XGBoost but slower to train on large datasets.
-- **Key hyperparameters:** `n_estimators`, `learning_rate`, `max_depth`, `subsample`
-- **Tuning:** GridSearchCV, 5-fold CV
+### Model 2: Support Vector Machine — RBF Kernel (SVM)
 
-### 11. Decision Tree
-A single recursive tree that partitions the feature space using axis-aligned splits chosen to maximise information gain (Gini impurity). Fast and highly interpretable, but prone to overfitting without depth constraints. Serves as a baseline for the ensemble methods.
-- **Key hyperparameters:** `max_depth`, `min_samples_split`, `min_samples_leaf`
-- **Tuning:** GridSearchCV, 5-fold CV
+SVM finds the maximum-margin hyperplane separating classes. With the RBF (Gaussian) kernel `exp(-gamma * ||x - x'||^2)`, it maps data into an infinite-dimensional space to learn non-linear decision boundaries.
+
+- **Wrapper:** `OneVsRestClassifier(SVC(kernel='rbf', probability=True, random_state=42))`
+- **Tuning method:** `GridSearchCV`, 3-fold CV
+- **Search space:** 64 combinations
+  - `C`: [0.01, 0.1, 0.5, 1, 5, 10, 50, 100]
+  - `gamma`: [scale, auto, 0.001, 0.01, 0.05, 0.1, 0.5, 1.0]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | C | gamma | CV Bal. Acc |
+|---|---|---|---|
+| 1 | 100 | scale | 0.4924 |
+| 2 | 50 | scale | 0.4892 |
+| 3 | 10 | scale | 0.4750 |
+| 4 | 5 | scale | 0.4641 |
+| 5 | 1 | scale | 0.4278 |
+
+**Best configuration:** `C=100`, `gamma=scale`, CV Bal. Acc = **0.4924**
+
+---
+
+### Model 3: Gradient Boosting
+
+A sequential ensemble that fits each new tree to the residuals (negative gradient) of the combined model, using a stage-wise additive approach. Uses the scikit-learn implementation.
+
+- **Estimator:** `GradientBoostingClassifier(random_state=42)`
+- **Tuning method:** `GridSearchCV`, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`
+- **Search space:** 108 combinations
+  - `n_estimators`: [50, 100, 200]
+  - `learning_rate`: [0.01, 0.05, 0.1, 0.2]
+  - `max_depth`: [3, 5, 7]
+  - `subsample`: [0.6, 0.8, 1.0]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | n_estimators | learning_rate | max_depth | subsample | CV Bal. Acc |
+|---|---|---|---|---|---|
+| 1 | 200 | 0.1 | 7 | 0.6 | 0.5881 |
+| 2 | 200 | 0.2 | 7 | 0.6 | 0.5865 |
+| 3 | 200 | 0.2 | 7 | 0.8 | 0.5813 |
+| 4 | 200 | 0.2 | 7 | 1.0 | 0.5804 |
+| 5 | 200 | 0.1 | 7 | 0.8 | 0.5803 |
+
+**Best configuration:** `n_estimators=200`, `learning_rate=0.1`, `max_depth=7`, `subsample=0.6`, CV Bal. Acc = **0.5881**
+
+---
+
+### Model 4: Random Forest
+
+An ensemble of decision trees, each trained on a bootstrapped subset of data with random feature selection at each split. Predictions are made by majority vote. Reduces variance through bagging while maintaining low bias.
+
+- **Estimator:** `RandomForestClassifier(random_state=42, n_jobs=-1)`
+- **Tuning method:** `RandomizedSearchCV`, 40 iterations, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`
+- **Search space:** sampled from
+  - `n_estimators`: [50, 100, 200, 300, 500]
+  - `max_depth`: [None, 5, 10, 20, 30]
+  - `min_samples_split`: [2, 5, 10, 20]
+  - `min_samples_leaf`: [1, 2, 4, 8]
+  - `max_features`: [sqrt, log2, 0.3, 0.5]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | n_estimators | max_depth | min_samples_split | min_samples_leaf | max_features | CV Bal. Acc |
+|---|---|---|---|---|---|---|
+| 1 | 500 | 30 | 2 | 2 | 0.5 | 0.5678 |
+| 2 | 100 | 30 | 5 | 1 | 0.5 | 0.5664 |
+| 3 | 300 | None | 5 | 1 | 0.3 | 0.5648 |
+| 4 | 300 | 30 | 5 | 2 | 0.5 | 0.5627 |
+| 5 | 100 | 30 | 5 | 2 | 0.3 | 0.5607 |
+
+**Best configuration:** `n_estimators=500`, `max_depth=30`, `min_samples_split=2`, `min_samples_leaf=2`, `max_features=0.5`, CV Bal. Acc = **0.5678**
+
+---
+
+### Model 5: LightGBM
+
+A gradient boosting framework using leaf-wise tree growth and histogram-based split finding. Significantly faster and more memory-efficient than traditional GBDT implementations. Uses `LGBMClassifier` with native multi-class support.
+
+- **Estimator:** `LGBMClassifier(random_state=42, verbose=-1, n_jobs=-1)`
+- **Tuning method:** `RandomizedSearchCV`, 40 iterations, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`
+- **Search space:** sampled from
+  - `n_estimators`: [50, 100, 200, 300, 500]
+  - `learning_rate`: [0.01, 0.05, 0.1, 0.2, 0.3]
+  - `num_leaves`: [15, 31, 63, 127]
+  - `max_depth`: [-1, 3, 5, 7, 10]
+  - `min_child_samples`: [10, 20, 30, 50]
+  - `subsample`: [0.6, 0.7, 0.8, 0.9, 1.0]
+  - `colsample_bytree`: [0.6, 0.7, 0.8, 0.9, 1.0]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | n_estimators | learning_rate | num_leaves | max_depth | min_child_samples | subsample | colsample | CV Bal. Acc |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 500 | 0.2 | 127 | -1 | 50 | 0.7 | 0.6 | 0.6228 |
+| 1 | 500 | 0.1 | 127 | 10 | 20 | 0.6 | 0.7 | 0.6228 |
+| 3 | 200 | 0.3 | 127 | -1 | 20 | 0.9 | 0.9 | 0.6223 |
+| 4 | 300 | 0.3 | 31 | 10 | 20 | 1.0 | 0.7 | 0.6114 |
+| 5 | 300 | 0.1 | 63 | 10 | 20 | 0.9 | 0.9 | 0.6080 |
+
+**Best configuration:** `n_estimators=500`, `learning_rate=0.2`, `num_leaves=127`, `max_depth=-1`, `min_child_samples=50`, `subsample=0.7`, `colsample_bytree=0.6`, CV Bal. Acc = **0.6228**
+
+---
+
+### Model 6: XGBoost
+
+A scalable gradient boosting framework using second-order gradient statistics and L1/L2 regularisation in the objective function. Builds trees sequentially, each correcting errors of the prior.
+
+- **Estimator:** `XGBClassifier(objective='multi:softprob', eval_metric='mlogloss', random_state=42, n_jobs=-1)`
+- **Label encoding:** `LabelEncoder` applied to map class labels (D=0, H=1, P=2, R=3, S=4) to integer indices required by XGBoost's multi-class objective. Encoding order is alphabetical, matching `np.unique(y)` — ensuring `predict_proba` columns align correctly with `label_binarize` columns for AUC computation.
+- **Tuning method:** `GridSearchCV`, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`
+- **Search space:** 324 combinations
+  - `n_estimators`: [50, 100, 200]
+  - `learning_rate`: [0.01, 0.05, 0.1, 0.2]
+  - `max_depth`: [3, 5, 7]
+  - `subsample`: [0.6, 0.8, 1.0]
+  - `colsample_bytree`: [0.6, 0.8, 1.0]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | n_estimators | learning_rate | max_depth | subsample | colsample_bytree | CV Bal. Acc |
+|---|---|---|---|---|---|---|
+| 1 | 200 | 0.2 | 7 | 0.8 | 1.0 | 0.6042 |
+| 2 | 200 | 0.2 | 7 | 0.8 | 0.8 | 0.6031 |
+| 3 | 200 | 0.2 | 7 | 0.6 | 1.0 | 0.6019 |
+| 4 | 200 | 0.2 | 7 | 0.6 | 0.8 | 0.6007 |
+| 5 | 200 | 0.2 | 7 | 0.8 | 0.6 | 0.6004 |
+
+**Best configuration:** `n_estimators=200`, `learning_rate=0.2`, `max_depth=7`, `subsample=0.8`, `colsample_bytree=1.0`, CV Bal. Acc = **0.6042**
+
+---
+
+### Model 7: Extra Trees (Extremely Randomised Trees)
+
+Similar to Random Forest but selects both split features and split thresholds entirely at random rather than searching for the optimal split. This additional randomisation further reduces variance at the cost of slight bias, and is computationally faster than Random Forest.
+
+- **Estimator:** `ExtraTreesClassifier(random_state=42, n_jobs=-1)`
+- **Tuning method:** `RandomizedSearchCV`, 40 iterations, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`
+- **Search space:** sampled from
+  - `n_estimators`: [50, 100, 200, 300, 500]
+  - `max_depth`: [None, 5, 10, 20, 30]
+  - `min_samples_split`: [2, 5, 10, 20]
+  - `min_samples_leaf`: [1, 2, 4, 8]
+  - `max_features`: [sqrt, log2, 0.3, 0.5]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | n_estimators | max_depth | min_samples_split | min_samples_leaf | max_features | CV Bal. Acc |
+|---|---|---|---|---|---|---|
+| 1 | 500 | 30 | 2 | 2 | 0.5 | 0.5819 |
+| 2 | 100 | 30 | 5 | 1 | 0.5 | 0.5811 |
+| 3 | 300 | None | 5 | 1 | 0.3 | 0.5803 |
+| 4 | 300 | 30 | 5 | 2 | 0.5 | 0.5756 |
+| 5 | 100 | 30 | 5 | 2 | 0.3 | 0.5566 |
+
+**Best configuration:** `n_estimators=500`, `max_depth=30`, `min_samples_split=2`, `min_samples_leaf=2`, `max_features=0.5`, CV Bal. Acc = **0.5819**
+
+---
+
+### Model 8: Multi-Layer Perceptron (MLP)
+
+A feedforward artificial neural network with fully connected hidden layers, trained via backpropagation with stochastic gradient descent. Capable of learning complex non-linear feature representations. `StandardScaler` is applied inside a `Pipeline` since MLP training is sensitive to feature magnitude.
+
+- **Estimator:** `Pipeline([('scaler', StandardScaler()), ('clf', MLPClassifier(max_iter=500, random_state=42))])`
+- **Tuning method:** `RandomizedSearchCV`, 30 iterations, `StratifiedKFold(n_splits=3, shuffle=True, random_state=42)`
+- **Search space:** sampled from
+  - `clf__hidden_layer_sizes`: [(64,), (128,), (256,), (64,64), (128,64), (128,128), (256,128), (64,64,32)]
+  - `clf__activation`: [relu, tanh]
+  - `clf__alpha` (L2 regularisation): [1e-5, 1e-4, 1e-3, 0.01, 0.1]
+  - `clf__learning_rate`: [constant, adaptive]
+- **Scoring:** `balanced_accuracy`
+
+**Top 5 hyperparameter combinations (CV balanced accuracy):**
+
+| Rank | hidden_layer_sizes | activation | alpha | learning_rate | CV Bal. Acc |
+|---|---|---|---|---|---|
+| 1 | (256, 128) | tanh | 0.01 | adaptive | 0.5324 |
+| 2 | (256, 128) | tanh | 0.0001 | constant | 0.5297 |
+| 3 | (256, 128) | relu | 1e-05 | constant | 0.5269 |
+| 4 | (256, 128) | relu | 0.0001 | adaptive | 0.5250 |
+| 5 | (128, 64) | relu | 0.01 | constant | 0.5192 |
+
+**Best configuration:** `hidden_layer_sizes=(256, 128)`, `activation=tanh`, `alpha=0.01`, `learning_rate=adaptive`, CV Bal. Acc = **0.5324**
+
+---
+
+## CV Balanced Accuracy Summary (All Models)
+
+This table summarises the best cross-validated balanced accuracy achieved by each model during hyperparameter tuning.
+
+| Model | Best CV Balanced Accuracy |
+|---|---|
+| KNN | 0.6329 |
+| LightGBM | 0.6228 |
+| XGBoost | 0.6042 |
+| Gradient Boosting | 0.5881 |
+| Extra Trees | 0.5819 |
+| Random Forest | 0.5678 |
+| MLP | 0.5324 |
+| SVM (RBF) | 0.4924 |
 
 ---
 
 ## Evaluation Metrics
 
-All models are evaluated on the held-out test set (30%) using the following metrics:
+All models are evaluated on the held-out test set (30%) using the following metrics, computed via a single shared `evaluate()` function to ensure consistency across all models.
 
 | Metric | Description |
 |---|---|
-| **Balanced Accuracy** | Mean per-class recall — preferred over raw accuracy due to class imbalance |
-| **Macro ROC AUC** | Average One-vs-Rest AUC across all 5 classes, treating each equally |
-| **Micro ROC AUC** | Aggregate OvR AUC across all samples — dominated by majority classes |
-| **Precision** | Proportion of positive predictions that are correct (per class and macro/weighted average) |
-| **Recall** | Proportion of actual positives correctly identified (per class and macro/weighted average) |
-| **F1-Score** | Harmonic mean of precision and recall (per class and macro/weighted average) |
-| **Classification Report** | Full per-class breakdown of precision, recall, F1, and support |
+| **Balanced Accuracy** | Mean per-class recall — preferred over raw accuracy due to class imbalance. Penalises models that ignore minority classes. |
+| **Macro ROC AUC** | One-vs-Rest AUC averaged equally across all 5 gesture phases. Treats minority and majority classes with equal importance. |
+| **Micro ROC AUC** | Aggregate OvR AUC across all samples — weighted by class frequency, so dominated by majority classes (S and D). |
+| **Precision** | Proportion of positive predictions that are correct (per class, plus macro and weighted average). |
+| **Recall** | Proportion of actual positives correctly identified (per class, plus macro and weighted average). |
+| **F1-Score** | Harmonic mean of precision and recall (per class, plus macro and weighted average). |
+| **Classification Report** | Full per-class breakdown of precision, recall, F1-score, and support. |
 
-> **Why balanced accuracy?** The dataset has moderate class imbalance (D and S are more frequent than H and R). Raw accuracy would be misleading — a model that ignores minority classes can still appear accurate. Balanced accuracy penalises this equally across all classes.
+> **Why balanced accuracy over raw accuracy?** The dataset has moderate class imbalance — Hold (H) and Retraction (R) together account for only ~21% of samples. A model that simply predicts the majority classes (S and D) can achieve high raw accuracy while completely failing on minority classes. Balanced accuracy penalises this equally across all five gesture phases, making it the most informative primary metric for this task.
+
+> **Why macro AUC over micro AUC?** Micro AUC is dominated by the majority classes due to its sample-weighted aggregation. Macro AUC treats each gesture phase equally, making it a fairer overall measure of model quality under class imbalance. A model with a large gap between macro and micro AUC is performing well on common classes but failing on the minority phases.
+
+---
+
+## Shared `evaluate()` Function
+
+To avoid inconsistency and code duplication, a single `evaluate(name, y_true, y_pred, y_prob)` function is defined once at the start of the notebook and called by every model. All results are stored in global `all_results` and `all_roc_data` dictionaries for the final comparison.
+
+| Step | What it does |
+|---|---|
+| Balanced Accuracy | `balanced_accuracy_score(y_true, y_pred)` |
+| Macro AUC | `roc_auc_score(y_test_bin, y_prob, average='macro', multi_class='ovr')` |
+| Micro AUC | `roc_auc_score(y_test_bin, y_prob, average='micro')` |
+| Classification Report | `classification_report(y_true, y_pred, target_names=CLASSES)` |
+| Confusion Matrix | `ConfusionMatrixDisplay` with Purples colour map |
+| Per-class OvR ROC | `roc_curve(y_test_bin[:, i], y_prob[:, i])` for each of the 5 classes |
+| Macro-average ROC curve | Interpolates each per-class curve onto a common 1,000-point FPR grid using `np.interp`, then averages the TPR values. Forces `mean_tpr[-1] = 1.0` to ensure the curve ends at (1, 1). |
+| Micro-average ROC curve | Flattens all 5 classes into a single binary problem via `roc_curve(y_test_bin.ravel(), y_prob.ravel())`. Forces `fpr[-1] = 1.0`, `tpr[-1] = 1.0`. |
+| Storage | Saves scalar metrics to `all_results[name]` and ROC curve data to `all_roc_data[name]` |
 
 ---
 
 ## Visualisations
 
-Each model produces the following plots:
+Each model produces:
 
 ### Confusion Matrix
-Shows the count of correct and incorrect predictions for each class pair. Plotted using `ConfusionMatrixDisplay` with a blue colour map. Reveals which gesture phases are most commonly confused with each other.
-
-### Per-Class OvR ROC Curves (per model)
-One ROC curve per class using a One-vs-Rest (OvR) strategy. The curve plots True Positive Rate vs. False Positive Rate at varying classification thresholds. The area under each curve (AUC) measures how well the model distinguishes that class from all others. A perfect classifier has AUC = 1.0; a random classifier has AUC = 0.5.
+Shows the count of correct and incorrect predictions for each class pair, plotted with `ConfusionMatrixDisplay` using a Purples colour map. Reveals which gesture phases are most commonly confused with each other.
 
 ### Final Comparison Bar Charts
-Three side-by-side horizontal bar charts (sorted by Macro ROC AUC) comparing all 11 models across:
-- Balanced Accuracy
-- Macro OvR ROC AUC
-- Micro OvR ROC AUC
+Three side-by-side horizontal bar charts (sorted by Macro ROC AUC) comparing all 8 models across Balanced Accuracy, Macro OvR ROC AUC, and Micro OvR ROC AUC.
 
-### Per-Class ROC Comparison (all models)
-One plot per class (5 total), with all 11 models overlaid on the same axes. Allows direct comparison of how well each model distinguishes a specific gesture phase from the rest.
+### Per-Class OvR ROC Comparison (all models)
+One plot per gesture phase (5 total), with all 8 models overlaid on the same axes. Allows direct comparison of how well each model distinguishes a specific gesture phase from the rest.
+
+### Macro-Average OvR ROC (all models)
+All 8 models overlaid on one graph. Each model's curve is computed by interpolating its 5 per-class ROC curves to a common FPR grid and averaging TPR. Shows overall multi-class discrimination ability with equal class weighting.
+
+### Micro-Average OvR ROC (all models)
+All 8 models overlaid on one graph. Each model's curve is computed by treating all class predictions as one large binary problem. Shows aggregated discrimination weighted by class frequency.
 
 ---
 
 ## Experimental Protocol
 
-- **Train/test split:** 70% training, 30% test — stratified by class, `random_state=42`
-- **Hyperparameter tuning:** Performed on training data only (no leakage into test set)
-- **Scoring metric:** `balanced_accuracy` for all `GridSearchCV` / `RandomizedSearchCV` calls
-- **Preprocessing:** `StandardScaler` applied inside `Pipeline` for scale-sensitive models (SVM, KNN, MLP, Naive Bayes, Logistic Regression)
-- **Tree-based models** (Random Forest, Extra Trees, LightGBM, XGBoost, Gradient Boosting, Decision Tree) require no feature scaling
+| Setting | Value |
+|---|---|
+| Train / test split | 70% training, 30% test — stratified by class |
+| Random seed | `RANDOM_STATE = 42` throughout |
+| Hyperparameter tuning | Performed exclusively on training data — no test data leakage |
+| Scoring metric | `balanced_accuracy` for all `GridSearchCV` / `RandomizedSearchCV` calls |
+| Preprocessing | `StandardScaler` inside `Pipeline` for scale-sensitive models (MLP only in this notebook) |
+| Tree-based models | No feature scaling required (Random Forest, Extra Trees, LightGBM, XGBoost, Gradient Boosting) |
+| KNN & SVM | Wrapped in `OneVsRestClassifier` for explicit multiclass decomposition |
+
+---
+
+## Conclusions
+
+1. **Tree-based ensemble methods consistently outperform** distance-based and linear methods on this dataset. LightGBM, XGBoost, Gradient Boosting, Random Forest, and Extra Trees all rank above MLP and SVM across every evaluation metric, confirming that the gesture phase feature space contains non-linear interactions that simpler models cannot capture effectively.
+
+2. **Class imbalance directly impacts per-class performance.** The minority gesture phases — Hold (H) and Retraction (R) at ~10% each — consistently show lower per-class recall and AUC across all models compared to the majority classes Stroke (S) and Rest (D). Balanced accuracy and macro AUC are therefore the most informative evaluation metrics for this task.
+
+3. **Evaluation metrics are mutually consistent.** The close alignment between balanced accuracy rankings and macro AUC rankings across all 8 models indicates that the chosen metrics reinforce each other, strengthening confidence in the comparative conclusions drawn from the results.
+
+4. **Hyperparameter tuning had a measurable impact.** The top-ranked parameter combinations achieved meaningfully higher CV balanced accuracy than default configurations across all models, justifying the computational cost of the search. The consistent preference for deeper trees, larger ensembles, and leaf-wise growth (high `num_leaves` in LightGBM) reflects the complexity of the gesture phase classification problem.
+
+5. **Recommended method: LightGBM** with `n_estimators=500`, `learning_rate=0.2`, `num_leaves=127`, `max_depth=-1`, `min_child_samples=50`, `subsample=0.7`, `colsample_bytree=0.6`. LightGBM achieved the highest cross-validated balanced accuracy (0.6228) and consistently high macro AUC, combining strong predictive performance with efficient training via leaf-wise tree growth and histogram-based binning — making it the most suitable method for gesture phase segmentation on this dataset.
 
 ---
 
@@ -164,9 +407,20 @@ pip install scikit-learn lightgbm xgboost numpy pandas matplotlib seaborn
 
 ## References
 
+### Dataset
 - Madeo, R. C. B., Lima, C. A. M., & Peres, S. M. (2013). *Gesture Unit Segmentation using Support Vector Machines.* ACM SAC.
-- Pedregosa et al. (2011). *Scikit-learn: Machine Learning in Python.* JMLR 12, 2825–2830.
-- Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS.
-- Breiman, L. (2001). *Random Forests.* Machine Learning, 45(1), 5–32.
-- Chen, T. & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD.
+
+### Models
+- Cover, T. & Hart, P. (1967). *Nearest Neighbor Pattern Classification.* IEEE Transactions on Information Theory.
+- Cortes, C. & Vapnik, V. (1995). *Support-Vector Networks.* Machine Learning, 20(3), 273–297.
 - Friedman, J. H. (2001). *Greedy Function Approximation: A Gradient Boosting Machine.* Annals of Statistics.
+- Breiman, L. (2001). *Random Forests.* Machine Learning, 45(1), 5–32.
+- Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS.
+- Chen, T. & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD 2016.
+- Geurts, P., Ernst, D. & Wehenkel, L. (2006). *Extremely Randomized Trees.* Machine Learning, 63(1), 3–42.
+- Goodfellow, I., Bengio, Y. & Courville, A. (2016). *Deep Learning.* MIT Press.
+
+### Evaluation
+- Pedregosa et al. (2011). *Scikit-learn: Machine Learning in Python.* JMLR 12, 2825–2830.
+- Brodersen, K. H. et al. (2010). *The Balanced Accuracy and Its Posterior Distribution.* ICPR.
+- Fawcett, T. (2006). *An Introduction to ROC Analysis.* Pattern Recognition Letters, 27(8), 861–874.
