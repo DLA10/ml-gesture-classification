@@ -410,17 +410,41 @@ pip install scikit-learn lightgbm xgboost numpy pandas matplotlib seaborn
 ### Dataset
 - Madeo, R. C. B., Lima, C. A. M., & Peres, S. M. (2013). *Gesture Unit Segmentation using Support Vector Machines.* ACM SAC.
 
-### Models
-- Cover, T. & Hart, P. (1967). *Nearest Neighbor Pattern Classification.* IEEE Transactions on Information Theory.
-- Cortes, C. & Vapnik, V. (1995). *Support-Vector Networks.* Machine Learning, 20(3), 273–297.
-- Friedman, J. H. (2001). *Greedy Function Approximation: A Gradient Boosting Machine.* Annals of Statistics.
-- Breiman, L. (2001). *Random Forests.* Machine Learning, 45(1), 5–32.
-- Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS.
-- Chen, T. & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD 2016.
-- Geurts, P., Ernst, D. & Wehenkel, L. (2006). *Extremely Randomized Trees.* Machine Learning, 63(1), 3–42.
-- Goodfellow, I., Bengio, Y. & Courville, A. (2016). *Deep Learning.* MIT Press.
+### 1. K-Nearest Neighbours (KNN)
+- **Theory:** Cover, T. & Hart, P. (1967). *Nearest Neighbor Pattern Classification.* IEEE Transactions on Information Theory. [https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm)
+- **Implementation:** scikit-learn. *KNeighborsClassifier API.* [https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html)
 
-### Evaluation
-- Pedregosa et al. (2011). *Scikit-learn: Machine Learning in Python.* JMLR 12, 2825–2830.
-- Brodersen, K. H. et al. (2010). *The Balanced Accuracy and Its Posterior Distribution.* ICPR.
-- Fawcett, T. (2006). *An Introduction to ROC Analysis.* Pattern Recognition Letters, 27(8), 861–874.
+### 2. Gradient Boosting
+- **Theory:** Friedman, J. H. (2001). *Greedy Function Approximation: A Gradient Boosting Machine.* Annals of Statistics. [https://en.wikipedia.org/wiki/Gradient_boosting](https://en.wikipedia.org/wiki/Gradient_boosting)
+- **Implementation:** scikit-learn. *GradientBoostingClassifier API.* [https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html)
+
+### 3. XGBoost
+- **Theory:** Chen, T. & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD 2016. [https://arxiv.org/abs/1603.02754](https://arxiv.org/abs/1603.02754)
+- **Implementation:** XGBoost Developers. *XGBoost Python API.* [https://xgboost.readthedocs.io/en/stable/python/python_api.html](https://xgboost.readthedocs.io/en/stable/python/python_api.html)
+
+### 4. Random Forest
+- **Theory:** Breiman, L. (2001). *Random Forests.* Machine Learning, 45(1), 5–32. [https://en.wikipedia.org/wiki/Random_forest](https://en.wikipedia.org/wiki/Random_forest)
+- **Implementation:** scikit-learn. *RandomForestClassifier API.* [https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
+
+### 5. Extra Trees
+- **Theory:** Geurts, P., Ernst, D. & Wehenkel, L. (2006). *Extremely Randomized Trees.* Machine Learning, 63(1), 3–42. [https://en.wikipedia.org/wiki/Random_forest#ExtraTrees](https://en.wikipedia.org/wiki/Random_forest#ExtraTrees)
+- **Implementation:** scikit-learn. *ExtraTreesClassifier API.* [https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html)
+
+### 6. Multi-Layer Perceptron (MLP)
+- **Theory:** Goodfellow, I., Bengio, Y. & Courville, A. (2016). *Deep Learning.* MIT Press. [https://en.wikipedia.org/wiki/Multilayer_perceptron](https://en.wikipedia.org/wiki/Multilayer_perceptron)
+- **Implementation:** scikit-learn. *MLPClassifier API.* [https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)
+
+### 7. LightGBM
+- **Theory:** Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS. [https://lightgbm.readthedocs.io/en/stable/Features.html](https://lightgbm.readthedocs.io/en/stable/Features.html)
+- **Implementation:** LightGBM Developers. *LGBMClassifier API.* [https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMClassifier.html](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMClassifier.html)
+
+### 8. Support Vector Machine (SVM)
+- **Theory:** Cortes, C. & Vapnik, V. (1995). *Support-Vector Networks.* Machine Learning, 20(3), 273–297. [https://en.wikipedia.org/wiki/Support_vector_machine](https://en.wikipedia.org/wiki/Support_vector_machine)
+- **Implementation:** scikit-learn. *SVC API.* [https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
+
+---
+
+### Evaluation Metrics
+- **Balanced Accuracy:** Brodersen, K. H. et al. (2010). *The Balanced Accuracy and Its Posterior Distribution.* ICPR. scikit-learn docs: [https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html)
+- **ROC AUC (Macro & Micro):** Fawcett, T. (2006). *An Introduction to ROC Analysis.* Pattern Recognition Letters, 27(8), 861–874. scikit-learn docs: [https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html)
+- **scikit-learn:** Pedregosa et al. (2011). *Scikit-learn: Machine Learning in Python.* JMLR 12, 2825–2830. [https://scikit-learn.org/stable/](https://scikit-learn.org/stable/)
