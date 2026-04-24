@@ -1,17 +1,6 @@
-# ML Gesture Phase Segmentation — Classification Coursework
+# ML Gesture Phase Segmentation — Classification
 
-MSc Data Science | Machine Learning Group Submission | Group 11
-
----
-
-## Group Members
-
-| Name | Student ID |
-|---|---|
-| Lalith Aditya Devaraj | K2551111 |
-| Raja Mathangi Sundar | K2542487 |
-| Shalini Manikkavasagam | K2551032 |
-| Threya Reddy Tummeti | K2557789 |
+MSc Data Science | Machine Learning
 
 ---
 
