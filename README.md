@@ -1,17 +1,5 @@
 # ML Gesture Phase Segmentation — Classification
 
-MSc Data Science | Machine Learning
-
----
-
-## Notebook
-
-| Notebook | Description |
-|---|---|
-| `MLCW_1_Simplified.ipynb` | Main submission notebook — 8 classification models, full hyperparameter tuning, evaluation, and comparative analysis |
-
----
-
 ## Dataset
 
 **OpenML ID:** 4538 — *Gesture Phase Segmentation (Processed)*
